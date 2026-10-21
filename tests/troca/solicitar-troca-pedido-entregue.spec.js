@@ -30,7 +30,13 @@ test('solicita troca do primeiro item de pedido entregue', async ({ page }) => {
   const orders = Array.isArray(ordersPayload) ? ordersPayload : ordersPayload.content ?? [];
   const deliveredItem = orders
     .flatMap((order) => (order.itens ?? []).map((item) => ({ order, item })))
-    .find(({ item }) => String(item.itemStatus ?? item.status ?? '').toUpperCase() === 'DELIVERED');
+    .find(({ item }) => {
+      const statuses = Object.entries(item)
+        .filter(([key]) => /status/i.test(key))
+        .map(([, status]) => String(status).trim().toUpperCase());
+
+      return statuses.includes('DELIVERED') && !statuses.includes('EXCHANGE_REQUEST');
+    });
 
   expect(
     deliveredItem,
