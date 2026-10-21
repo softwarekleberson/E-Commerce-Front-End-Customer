@@ -1,0 +1,10 @@
+roda todos os testes de cliente
+npx playwright test tests/cliente --headed --workers=1
+
+
+roda o teste de crud (carrinho) e pagamento (cartão, cartão + cartão, cupom e cupom + cartão)
+npx playwright test tests/carrinho/ tests/checkout/ --headed --workers=1
+
+
+roda teste em replacement pedido de troca (sem pedido entregue) e com pedido entregue
+npx playwright test tests/replacement tests/troca --project=chromium --headed
