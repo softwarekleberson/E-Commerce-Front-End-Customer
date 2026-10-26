@@ -12,12 +12,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Filtro por categoria
     const books = produtos.filter(p => p.category === "BOOKS");
     const bags = produtos.filter(p => p.category === "BAG");
+    const toys = produtos.filter(p => p.category === "TOYS");
 
     const booksContainer = document.getElementById("books-container");
     const bagsContainer = document.getElementById("bags-container");
+    const toysContainer = document.getElementById("toys-container");
 
     if (booksContainer) booksContainer.innerHTML = "";
     if (bagsContainer) bagsContainer.innerHTML = "";
+    if (toysContainer) toysContainer.innerHTML = "";
 
     // Imagem padrão global caso o produto não tenha mídia válida
     const DEFAULT_IMG = 'https://via.placeholder.com/200';
@@ -76,7 +79,33 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     });
 
-    console.log(`Sucesso! Livros encontrados: ${books.length}, Bolsas encontradas: ${bags.length}`);
+    // Renderizar Brinquedos
+    toys.forEach(toy => {
+      const card = document.createElement("div");
+      card.classList.add("card");
+
+      const preco = typeof toy.price === 'number' ? toy.price.toFixed(2) : '0.00';
+      const imgUrl = (toy.midias && toy.midias[0] && toy.midias[0].url) ? toy.midias[0].url : DEFAULT_IMG;
+
+      card.innerHTML = `
+        <img class="card__image" src="${imgUrl}" alt="${toy.name || 'Brinquedo'}">
+        <h3 class="card__title">${toy.name || 'Sem nome'}</h3>
+        <p class="card__meta">${toy.brand || toy.toyType || ''}</p>
+        <div class="card__price">$ ${preco} - ${toy.typeCoin || 'USD'}</div>
+        <div class="card__actions">
+          <button class="btn btn-details">Details</button>
+        </div>
+      `;
+
+      if (toysContainer) {
+        toysContainer.appendChild(card);
+        card.querySelector('.btn-details').addEventListener('click', () => {
+          window.location.href = `toy-details.html?id=${toy.id}`;
+        });
+      }
+    });
+
+    console.log(`Sucesso! Livros encontrados: ${books.length}, Bolsas encontradas: ${bags.length}, Brinquedos encontrados: ${toys.length}`);
 
   } catch (err) {
     console.error("Erro ao carregar produtos:", err);

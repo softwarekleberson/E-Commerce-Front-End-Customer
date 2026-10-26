@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalhes do Brinquedo - Hatchards</title>
+    <link rel="stylesheet" href="css-global/reset-global/reset.css">
+    <link rel="stylesheet" href="css-global/footer/footer.css">
+    <link rel="stylesheet" href="css-global/book/book.css">
+</head>
+<body>
+    <header>
+        <h1><a href="index.html">Hatchards</a></h1>
+        <nav><a href="index.html">Home</a><a href="cart.html">Cart</a></nav>
+    </header>
+
+    <main class="product-detail">
+        <div class="product-image">
+            <img src="https://via.placeholder.com/500x500?text=Brinquedo" alt="Imagem do brinquedo">
+        </div>
+        <div class="product-info">
+            <h2 id="name">Brinquedo</h2>
+            <p class="description"></p>
+            <p class="price"></p>
+            <button class="add-to-cart" id="add-to-cart">Add to Cart</button>
+            <div class="product-details">
+                <h3>Especificações</h3>
+                <ul class="specs">
+                    <li id="brand"></li>
+                    <li id="toyType"></li>
+                    <li id="ageRange"></li>
+                    <li id="material"></li>
+                    <li id="numberOfPieces"></li>
+                    <li id="batteryRequired"></li>
+                    <li id="batteryIncluded"></li>
+                </ul>
+            </div>
+        </div>
+    </main>
+
+    <script src="details/js/toy/index.js"></script>
+    <script src="details/js/cart/index-book.js"></script>
+</body>
+</html>
