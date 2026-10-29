@@ -118,6 +118,10 @@ function createOrderCard(order) {
                 <p>${formatCurrency(order.total, order.currency)}</p>
             </div>
             <div class="info-group">
+                <span>SHIPPING</span>
+                <p>${formatCurrency(order.shippingCost, order.currency)}</p>
+            </div>
+            <div class="info-group">
                 <span>ORDER STATUS</span>
                 <p>${order.orderStatus || 'Processando'}</p>
             </div>

@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", async () => {
     const tabelaCorpo = document.querySelector("table");
     const valorSubtotal = document.querySelector(".valor-subtotal");
+    const valorFrete = document.querySelector(".valor-frete");
     const valorTotal = document.querySelector(".valor-total");
 
     const token = localStorage.getItem("token");
@@ -30,7 +31,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         // Inicializa a renderização passando a lista de itens correta
         renderizarItens(cartData.cartItens, tabelaCorpo);
-        atualizarResumo(cartData, valorSubtotal, valorTotal);
+        atualizarResumo(cartData, valorSubtotal, valorFrete, valorTotal);
 
     } catch (error) {
         console.error("Erro ao carregar o carrinho:", error);
@@ -112,6 +113,7 @@ async function removerItem(botao) {
             if (tabelaCorpo && tabelaCorpo.children.length === 0) {
                 tabelaCorpo.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px;">Your cart is empty.</td></tr>`;
                 document.querySelector(".valor-subtotal").textContent = "R$ 0.00";
+                document.querySelector(".valor-frete").textContent = "R$ 0.00";
                 document.querySelector(".valor-total").textContent = "R$ 0.00";
             } else {
                 window.location.reload();
@@ -182,7 +184,12 @@ async function atualizarQuantidade(input) {
                 linha.querySelector('.item-subtotal').textContent = `${moedaSimbolo} ${parseFloat(itemAtualizado.subtotal).toFixed(2)}`;
             }
             
-            atualizarResumo(cartData, document.querySelector(".valor-subtotal"), document.querySelector(".valor-total"));
+            atualizarResumo(
+                cartData,
+                document.querySelector(".valor-subtotal"),
+                document.querySelector(".valor-frete"),
+                document.querySelector(".valor-total")
+            );
 
         } else {
             const errorData = await response.json();
@@ -194,13 +201,17 @@ async function atualizarQuantidade(input) {
     }
 }
 
-function atualizarResumo(cart, subtotalElement, totalElement) {
+function atualizarResumo(cart, subtotalElement, freteElement, totalElement) {
     const moeda = cart.coin === "REAL" || cart.coin === "BRL" ? "R$" : "$";
-    
-    // Trata caso o preço total venha encapsulado em um objeto ou direto como número
     const precoBruto = cart.totalPrice?.price !== undefined ? cart.totalPrice.price : cart.totalPrice;
-    const preco = parseFloat(precoBruto).toFixed(2);
+    const subtotal = Number(precoBruto);
+    const frete = Number(cart.shippingCost);
 
-    if (subtotalElement) subtotalElement.textContent = `${moeda} ${preco}`;
-    if (totalElement) totalElement.textContent = `${moeda} ${preco}`;
+    if (!Number.isFinite(subtotal) || cart.shippingCost == null || !Number.isFinite(frete)) {
+        throw new Error("A API do carrinho não retornou valores válidos para subtotal e frete.");
+    }
+
+    if (subtotalElement) subtotalElement.textContent = `${moeda} ${subtotal.toFixed(2)}`;
+    if (freteElement) freteElement.textContent = `${moeda} ${frete.toFixed(2)}`;
+    if (totalElement) totalElement.textContent = `${moeda} ${(subtotal + frete).toFixed(2)}`;
 }

@@ -79,17 +79,26 @@ function populateCartItems(cartItens) {
 function updateCartSummary(cart) {
     const summaryDescription = document.getElementById('summaryDescription');
     const summarySubtotal = document.getElementById('summarySubtotal');
+    const summaryShippingCost = document.getElementById('summaryShippingCost');
     const summaryTotal = document.getElementById('summaryTotal');
     const payButton = document.getElementById('payButton');
 
     const itemCount = cart.cartItens?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0;
-    const totalPrice = cart.totalPrice || 0;
+    const subtotal = Number(cart.totalPrice) || 0;
+    const shippingCost = Number(cart.shippingCost);
+    if (cart.shippingCost == null || !Number.isFinite(shippingCost)) {
+        throw new Error('A API do carrinho não retornou um valor válido para o frete.');
+    }
+    const totalPrice = subtotal + shippingCost;
 
     if (summaryDescription) {
         summaryDescription.textContent = `Subtotal (${itemCount} items)`;
     }
     if (summarySubtotal) {
-        summarySubtotal.textContent = formatCurrency(totalPrice);
+        summarySubtotal.textContent = formatCurrency(subtotal);
+    }
+    if (summaryShippingCost) {
+        summaryShippingCost.textContent = formatCurrency(shippingCost);
     }
     if (summaryTotal) {
         summaryTotal.textContent = formatCurrency(totalPrice);
