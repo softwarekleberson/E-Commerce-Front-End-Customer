@@ -68,5 +68,5 @@ test('bloqueia solicitação de troca para pedido que não está entregue', asyn
   await page.locator('#replacementForm button[type="submit"]').click();
 
   await expect(formStatus).toBeVisible();
-  await expect(formStatus).toHaveText('The item must be delivered first before requesting an exchange.');
+  await expect(formStatus).toHaveText('The item must be delivered before an exchange is requested, or while the item is undergoing an exchange review.');
 });
