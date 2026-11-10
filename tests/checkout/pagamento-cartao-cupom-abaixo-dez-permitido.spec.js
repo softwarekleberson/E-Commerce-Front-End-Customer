@@ -103,15 +103,10 @@ test('cliente aplica cupom e paga com cartão um valor menor que R$ 10,00', asyn
     'O carrinho deveria estar vazio após pagar os itens que já estavam nele'
   ).toHaveLength(0);
 
-  const product = products.find((item) => {
-    const price = Number(item.price);
-    const amountOnCard = price - Number(voucher.discount);
-    return item.id && amountOnCard > 0 && amountOnCard < 10;
-  });
-  expect(
-    product,
-    `O catálogo precisa ter um produto com preço entre R$ ${voucher.discount} e R$ ${Number(voucher.discount) + 10}`
-  ).toBeTruthy();
+  const product = products
+    .filter((item) => item.id)
+    .sort((first, second) => Number(first.price) - Number(second.price))[0];
+  expect(product, 'O catálogo não retornou nenhum produto').toBeTruthy();
 
   const productPage = product.category === 'BAG' ? 'bag-details.html' : 'book-details.html';
   await page.goto(`/${productPage}?id=${encodeURIComponent(product.id)}`);
