@@ -1,0 +1,151 @@
+.wishlist-page {
+    width: min(1180px, calc(100% - 48px));
+    min-height: 360px;
+    margin: 250px auto 110px;
+}
+
+.wishlist-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 30px;
+}
+
+.wishlist-heading h1 {
+    margin: 0 0 10px;
+    color: #29473D;
+    font-family: "Playfair Display", serif;
+    font-size: clamp(30px, 5vw, 42px);
+}
+
+.wishlist-heading p {
+    margin: 0;
+    color: #6b756e;
+    line-height: 1.5;
+}
+
+.wishlist-heading .eyebrow {
+    margin-bottom: 8px;
+    color: #A48847;
+    font-family: "Lato", sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+}
+
+.continue-shopping,
+.wishlist-actions button {
+    display: inline-flex;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 16px;
+    border: 0;
+    border-radius: 4px;
+    background: #29473D;
+    color: #fff;
+    cursor: pointer;
+    font: inherit;
+    text-decoration: none;
+}
+
+.continue-shopping:hover,
+.wishlist-actions button:hover {
+    background: #A48847;
+}
+
+.wishlist-status {
+    padding: 24px 0;
+    color: #6b756e;
+}
+
+.wishlist-status:empty {
+    display: none;
+}
+
+.wishlist-status.error {
+    color: #a12622;
+}
+
+.wishlist-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 20px;
+}
+
+.wishlist-card {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid rgba(41, 71, 61, 0.14);
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 8px 20px rgba(41, 71, 61, 0.07);
+}
+
+.wishlist-card img {
+    width: 100%;
+    height: 230px;
+    padding: 12px;
+    background: #f7faf7;
+    object-fit: contain;
+}
+
+.wishlist-card-content {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding: 16px;
+}
+
+.wishlist-card h2 {
+    margin: 0 0 8px;
+    color: #29473D;
+    font-family: "Playfair Display", serif;
+    font-size: 19px;
+    line-height: 1.35;
+}
+
+.wishlist-price {
+    margin: 0 0 16px;
+    color: #333;
+    font-weight: 700;
+}
+
+.wishlist-actions {
+    display: grid;
+    gap: 8px;
+    margin-top: auto;
+}
+
+.wishlist-actions .remove-wishlist-item {
+    border: 1px solid #d6ddd8;
+    background: #fff;
+    color: #29473D;
+}
+
+.wishlist-actions .remove-wishlist-item:hover {
+    border-color: #A48847;
+    background: #fbf8f0;
+}
+
+.wishlist-product-error {
+    margin: 0 0 14px;
+    color: #a12622;
+    font-size: 14px;
+}
+
+@media (max-width: 600px) {
+    .wishlist-page {
+        width: min(100% - 28px, 420px);
+        margin-top: 150px;
+        margin-bottom: 70px;
+    }
+
+    .wishlist-heading {
+        align-items: start;
+        flex-direction: column;
+    }
+}

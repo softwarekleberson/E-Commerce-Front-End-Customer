@@ -107,7 +107,7 @@ async function removerItem(botao) {
 
         if (response.ok) {
             linha.remove();
-            alert("Item removed!");
+            alert("Item removed from your cart and saved to your wishlist.");
             
             const tabelaCorpo = document.querySelector("table tbody");
             if (tabelaCorpo && tabelaCorpo.children.length === 0) {
