@@ -157,3 +157,68 @@
     font-size: 16px;
   }
 }
+
+
+.product-search-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 7rem 0;
+  color: #29473d;
+  font-size: 13px;
+}
+
+.product-search-filters input,
+.product-search-filters select {
+  min-height: 38px;
+  padding: 7px 9px;
+  border: 1px solid rgba(41, 71, 61, 0.28);
+  border-radius: 6px;
+  background: #fff;
+  color: #29473d;
+}
+
+.product-search-filters input { width: 105px; }
+.product-search-filters select { min-width: 150px; }
+
+.product-search-filters button {
+  min-height: 38px;
+  padding: 7px 12px;
+  border: 1px solid #29473d;
+  border-radius: 6px;
+  background: #29473d;
+  color: #fff;
+  cursor: pointer;
+}
+
+.product-search-filters .product-filter-clear {
+  background: transparent;
+  color: #29473d;
+}
+
+.product-search-status {
+  padding: 12px 7rem 0;
+  color: #29473d;
+}
+
+.search-results h2 {
+  padding: 24px 7rem 0;
+  color: #29473d;
+  font-size: 22px;
+}
+
+.product-search-button {
+  min-width: 40px;
+  min-height: 38px;
+  border: 0;
+  background: #fff;
+  color: #29473d;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .product-search-filters { padding: 16px 1rem 0; }
+  .product-search-status,
+  .search-results h2 { padding-left: 1rem; padding-right: 1rem; }
+}

@@ -1,113 +1,132 @@
-document.addEventListener("DOMContentLoaded", async () => {
+const PRODUCT_API = "http://localhost:8080/public/product";
+const DEFAULT_IMAGE = "https://via.placeholder.com/200";
+
+function createProductCard(product) {
+  const card = document.createElement("article");
+  card.className = "card";
+
+  const image = document.createElement("img");
+  image.className = "card__image";
+  image.src = product.midias?.[0]?.url || DEFAULT_IMAGE;
+  image.alt = product.name || "Product";
+  image.loading = "lazy";
+  image.onerror = () => { image.src = DEFAULT_IMAGE; };
+
+  const title = document.createElement("h3");
+  title.className = "card__title";
+  title.textContent = product.name || "Untitled product";
+
+  const meta = document.createElement("p");
+  meta.className = "card__meta";
+  meta.textContent = product.author || product.brand || product.toyType || "";
+
+  const price = document.createElement("p");
+  price.className = "card__price";
+  const amount = Number(product.price);
+  price.textContent = Number.isFinite(amount)
+    ? `${product.typeCoin || ""} ${amount.toFixed(2)}`.trim()
+    : "Price unavailable";
+
+  const actions = document.createElement("div");
+  actions.className = "card__actions";
+  const details = document.createElement("a");
+  details.className = "btn btn-details";
+  details.textContent = "Details";
+  const pageByCategory = { BOOKS: "book-details.html", BAG: "bag-details.html", TOYS: "toy-details.html" };
+  details.href = `${pageByCategory[product.category] || "details.html"}?id=${encodeURIComponent(product.id)}`;
+  actions.append(details);
+
+  card.append(image, title, meta, price, actions);
+  return card;
+}
+
+function renderProducts(products, container) {
+  container.replaceChildren(...products.map(createProductCard));
+}
+
+async function fetchProducts(params = new URLSearchParams()) {
+  params.set("page", "0");
+  params.set("size", "50");
+  const response = await fetch(`${PRODUCT_API}/search?${params.toString()}`);
+  if (!response.ok) throw new Error(`Product search failed (${response.status})`);
+  const data = await response.json();
+  return data.content || [];
+}
+
+function getFilters() {
+  const params = new URLSearchParams();
+  const query = document.querySelector("#product-search-form [name=name]").value.trim();
+  const category = document.getElementById("product-category").value;
+  const typeCoin = document.getElementById("product-currency").value;
+  const minimumPrice = document.getElementById("minimum-price").value;
+  const maximumPrice = document.getElementById("maximum-price").value;
+  if (query) params.set("name", query);
+  if (category) params.set("category", category);
+  if (typeCoin) params.set("typeCoin", typeCoin);
+  if (minimumPrice) params.set("minimumPrice", minimumPrice);
+  if (maximumPrice) params.set("maximumPrice", maximumPrice);
+  return params;
+}
+
+async function searchProducts() {
+  const status = document.getElementById("product-search-status");
+  const results = document.getElementById("search-results");
+  const resultsContainer = document.getElementById("search-results-container");
+  const catalog = ["books-container", "bags-container", "toys-container"];
+  results.hidden = false;
+  catalog.forEach(id => { document.getElementById(id).hidden = true; });
+  status.hidden = false;
+  status.textContent = "Searching products…";
+  resultsContainer.replaceChildren();
+
   try {
-    const response = await fetch("http://localhost:8080/public/product");
-    if (!response.ok) throw new Error(`Erro: ${response.status}`);
-
-    const data = await response.json();
-    
-    // Se o backend pagina os dados (ex: Spring Pageable), os dados ficam em data.content. 
-    // Caso seja uma lista direta, usamos data.
-    const produtos = data.content || (Array.isArray(data) ? data : []);
-
-    // Filtro por categoria
-    const books = produtos.filter(p => p.category === "BOOKS");
-    const bags = produtos.filter(p => p.category === "BAG");
-    const toys = produtos.filter(p => p.category === "TOYS");
-
-    const booksContainer = document.getElementById("books-container");
-    const bagsContainer = document.getElementById("bags-container");
-    const toysContainer = document.getElementById("toys-container");
-
-    if (booksContainer) booksContainer.innerHTML = "";
-    if (bagsContainer) bagsContainer.innerHTML = "";
-    if (toysContainer) toysContainer.innerHTML = "";
-
-    // Imagem padrão global caso o produto não tenha mídia válida
-    const DEFAULT_IMG = 'https://via.placeholder.com/200';
-
-    // Renderizar Livros
-    books.forEach(book => {
-      const card = document.createElement("div");
-      card.classList.add("card");
-      
-      // Proteções: garante que o preço é um número e que a imagem existe
-      const preco = typeof book.price === 'number' ? book.price.toFixed(2) : '0.00';
-      const imgUrl = (book.midias && book.midias[0] && book.midias[0].url) ? book.midias[0].url : DEFAULT_IMG;
-
-      card.innerHTML = `
-        <img class="card__image" src="${imgUrl}" alt="${book.name || 'Produto'}">
-        <h3 class="card__title">${book.name || 'Sem título'}</h3>
-        <p class="card__meta">${book.author || 'Autor desconhecido'}</p>
-        <div class="card__price">$ ${preco} - ${book.typeCoin || 'USD'}</div>
-        <div class="card__actions">
-          <button class="btn btn-details">Details</button>
-        </div>
-      `;
-      
-      if (booksContainer) {
-        booksContainer.appendChild(card);
-        card.querySelector('.btn-details').addEventListener('click', () => {
-          window.location.href = `book-details.html?id=${book.id}`;
-        });
-      }
-    });
-
-    // Renderizar Bolsas
-    bags.forEach(bag => {
-      const card = document.createElement("div");
-      card.classList.add("card");
-      
-      // Proteções equivalentes para bolsas
-      const preco = typeof bag.price === 'number' ? bag.price.toFixed(2) : '0.00';
-      const imgUrl = (bag.midias && bag.midias[0] && bag.midias[0].url) ? bag.midias[0].url : DEFAULT_IMG;
-
-      card.innerHTML = `
-        <img class="card__image" src="${imgUrl}" alt="${bag.name || 'Produto'}">
-        <h3 class="card__title">${bag.name || 'Sem nome'}</h3>
-        <p class="card__meta">${bag.brand || ''}</p>
-        <div class="card__price">$ ${preco} - ${bag.typeCoin || 'USD'}</div>
-        <div class="card__actions">
-          <button class="btn btn-details">Details</button>
-        </div>
-      `;
-      
-      if (bagsContainer) {
-        bagsContainer.appendChild(card); // Corrigido: passando o elemento HTML 'card'
-        card.querySelector('.btn-details').addEventListener('click', () => {
-          window.location.href = `bag-details.html?id=${bag.id}`;
-        });
-      }
-    });
-
-    // Renderizar Brinquedos
-    toys.forEach(toy => {
-      const card = document.createElement("div");
-      card.classList.add("card");
-
-      const preco = typeof toy.price === 'number' ? toy.price.toFixed(2) : '0.00';
-      const imgUrl = (toy.midias && toy.midias[0] && toy.midias[0].url) ? toy.midias[0].url : DEFAULT_IMG;
-
-      card.innerHTML = `
-        <img class="card__image" src="${imgUrl}" alt="${toy.name || 'Brinquedo'}">
-        <h3 class="card__title">${toy.name || 'Sem nome'}</h3>
-        <p class="card__meta">${toy.brand || toy.toyType || ''}</p>
-        <div class="card__price">$ ${preco} - ${toy.typeCoin || 'USD'}</div>
-        <div class="card__actions">
-          <button class="btn btn-details">Details</button>
-        </div>
-      `;
-
-      if (toysContainer) {
-        toysContainer.appendChild(card);
-        card.querySelector('.btn-details').addEventListener('click', () => {
-          window.location.href = `toy-details.html?id=${toy.id}`;
-        });
-      }
-    });
-
-    console.log(`Sucesso! Livros encontrados: ${books.length}, Bolsas encontradas: ${bags.length}, Brinquedos encontrados: ${toys.length}`);
-
-  } catch (err) {
-    console.error("Erro ao carregar produtos:", err);
+    const products = await fetchProducts(getFilters());
+    renderProducts(products, resultsContainer);
+    status.textContent = products.length
+      ? `${products.length} product(s) found.`
+      : "No products found for these filters.";
+  } catch (error) {
+    console.error("Error searching products:", error);
+    status.textContent = "Could not load products. Please try again.";
   }
+}
+
+async function loadCatalog() {
+  try {
+    const params = new URLSearchParams({ page: "0", size: "50" });
+    const response = await fetch(`${PRODUCT_API}?${params}`);
+    if (!response.ok) throw new Error(`Catalog request failed (${response.status})`);
+    const data = await response.json();
+    const products = data.content || [];
+    renderProducts(products.filter(p => p.category === "BOOKS"), document.getElementById("books-container"));
+    renderProducts(products.filter(p => p.category === "BAG"), document.getElementById("bags-container"));
+    renderProducts(products.filter(p => p.category === "TOYS"), document.getElementById("toys-container"));
+  } catch (error) {
+    console.error("Error loading products:", error);
+    const status = document.getElementById("product-search-status");
+    status.hidden = false;
+    status.textContent = "Could not load products.";
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("product-search-form");
+  form.addEventListener("submit", event => {
+    event.preventDefault();
+    searchProducts();
+  });
+  document.getElementById("apply-product-filters").addEventListener("click", searchProducts);
+  document.getElementById("clear-product-filters").addEventListener("click", () => {
+    form.reset();
+    document.getElementById("product-category").value = "";
+    document.getElementById("product-currency").value = "";
+    document.getElementById("minimum-price").value = "";
+    document.getElementById("maximum-price").value = "";
+    document.getElementById("search-results").hidden = true;
+    document.getElementById("product-search-status").hidden = true;
+    ["books-container", "bags-container", "toys-container"].forEach(id => {
+      document.getElementById(id).hidden = false;
+    });
+  });
+  loadCatalog();
 });

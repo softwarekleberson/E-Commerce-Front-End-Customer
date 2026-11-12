@@ -32,9 +32,10 @@
                 <span class="descricao">BEST BOOKS SINCE 1797</span>
             </div>
 
-            <div class="search-container">
-                <input type="text" class="search-input" placeholder="Title, Author, Keyword, or ISBN">
-            </div>
+            <form id="product-search-form" class="search-container" role="search">
+                <input type="search" class="search-input" name="name" placeholder="Search products" aria-label="Search products">
+                <button class="product-search-button" type="submit" aria-label="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
+            </form>
 
             <div class="bascket">
                 <a href="cart.html"><i class="fas fa-shopping-bag"></i></a>
@@ -87,6 +88,34 @@
     </div>
 
     <main>
+        <section class="product-search-filters" aria-label="Product filters">
+            <label for="product-category">Category</label>
+            <select id="product-category" name="category">
+                <option value="">All categories</option>
+                <option value="BOOKS">Books</option>
+                <option value="BAG">Bags</option>
+                <option value="TOYS">Toys</option>
+            </select>
+            <label for="product-currency">Currency</label>
+            <select id="product-currency" name="typeCoin">
+                <option value="">Any currency</option>
+                <option value="REAL">BRL</option>
+                <option value="DOLAR">USD</option>
+                <option value="EURO">EUR</option>
+                <option value="LIBRA">GBP</option>
+            </select>
+            <label for="minimum-price">Minimum price</label>
+            <input id="minimum-price" name="minimumPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00">
+            <label for="maximum-price">Maximum price</label>
+            <input id="maximum-price" name="maximumPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Any">
+            <button id="apply-product-filters" type="button">Apply filters</button>
+            <button id="clear-product-filters" type="button" class="product-filter-clear">Clear</button>
+        </section>
+        <p id="product-search-status" class="product-search-status" role="status" aria-live="polite" hidden></p>
+        <section id="search-results" class="search-results" aria-label="Search results" hidden>
+            <h2>Search results</h2>
+            <div id="search-results-container" class="grid"></div>
+        </section>
         <div id="books-container" class="grid"></div>
 
         <!--Third Banner-->
