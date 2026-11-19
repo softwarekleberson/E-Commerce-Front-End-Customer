@@ -2,6 +2,23 @@ main {
     margin-top: 240px;
 }
 
+.orders-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin: 24px auto;
+}
+
+.orders-pagination[hidden] {
+    display: none;
+}
+
+.orders-pagination button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
 .order-card {
     border: 1px solid #d5d9d9;
     border-radius: 8px;

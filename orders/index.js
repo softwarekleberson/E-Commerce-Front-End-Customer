@@ -1,4 +1,5 @@
 const API_URL = 'http://localhost:8080';
+const PAGE_SIZE = 50;
 
 // Função para formatar data
 function formatDate(dateString) {
@@ -41,7 +42,7 @@ function formatCurrency(value, currency) {
 }
 
 // Função para buscar orders
-async function loadOrders(page = 0, size = 10) {
+async function loadOrders(page = 0, size = PAGE_SIZE) {
     try {
         const token = localStorage.getItem('token');
         
@@ -73,7 +74,8 @@ async function loadOrders(page = 0, size = 10) {
         const data = await response.json();
         console.log('Orders recebidas:', data);
         
-        displayOrders(data.content);
+        const orders = data.content || [];
+        displayOrders(orders, page, getTotalPages(data, orders, page));
         
     } catch (error) {
         console.error('Erro na requisição:', error);
@@ -82,20 +84,55 @@ async function loadOrders(page = 0, size = 10) {
 }
 
 // Função para exibir as orders
-function displayOrders(orders) {
+function getTotalPages(data, orders, page) {
+    if (Number.isInteger(data.totalPages)) return data.totalPages;
+    if (Number.isFinite(data.totalElements)) return Math.ceil(data.totalElements / PAGE_SIZE);
+    return orders.length === PAGE_SIZE ? page + 2 : page + 1;
+}
+
+function renderPagination(page, totalPages) {
+    const pagination = document.createElement('nav');
+    pagination.id = 'orders-pagination';
+    pagination.className = 'orders-pagination';
+    pagination.setAttribute('aria-label', 'Order pages');
+    pagination.hidden = totalPages <= 1;
+    if (pagination.hidden) return pagination;
+
+    const previous = document.createElement('button');
+    previous.type = 'button';
+    previous.textContent = 'Previous';
+    previous.disabled = page === 0;
+    previous.addEventListener('click', () => loadOrders(page - 1));
+
+    const currentPage = document.createElement('span');
+    currentPage.textContent = `Page ${page + 1} of ${totalPages}`;
+    currentPage.setAttribute('aria-live', 'polite');
+
+    const next = document.createElement('button');
+    next.type = 'button';
+    next.textContent = 'Next';
+    next.disabled = page >= totalPages - 1;
+    next.addEventListener('click', () => loadOrders(page + 1));
+
+    pagination.append(previous, currentPage, next);
+    return pagination;
+}
+
+function displayOrders(orders, page, totalPages) {
     const mainContainer = document.querySelector('main');
     
     mainContainer.innerHTML = '';
     
     if (!orders || orders.length === 0) {
         mainContainer.innerHTML = '<p style="text-align: center; padding: 50px; font-size: 18px;">Nenhum pedido encontrado</p>';
-        return;
+    } else {
+        orders.forEach(order => {
+            const orderCard = createOrderCard(order);
+            mainContainer.appendChild(orderCard);
+        });
     }
-    
-    orders.forEach(order => {
-        const orderCard = createOrderCard(order);
-        mainContainer.appendChild(orderCard);
-    });
+
+    mainContainer.appendChild(renderPagination(page, totalPages));
 }
 
 // Função para criar o card de uma order

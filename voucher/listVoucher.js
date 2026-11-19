@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
-        const response = await fetch(`http://localhost:8080/customer/voucher`, {
+        const response = await fetch(`http://localhost:8080/customer/voucher?page=0&size=50`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",

@@ -1,4 +1,5 @@
 const API_URL = 'http://localhost:8080';
+const PAGE_SIZE = 50;
 const STATUS_STEPS = ['Em separação', 'Em transporte', 'Entregue'];
 
 function escapeHTML(value) {
@@ -72,7 +73,7 @@ async function loadTransport() {
 	}
 
 	try {
-		const response = await fetch(`${API_URL}/customer/orders?page=0&size=20`, {
+		const response = await fetch(`${API_URL}/customer/orders?page=0&size=${PAGE_SIZE}`, {
 			headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
 		});
 
