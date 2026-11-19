@@ -217,6 +217,30 @@
   cursor: pointer;
 }
 
+.product-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px 1rem 8px;
+  color: #29473d;
+}
+
+.product-pagination button {
+  min-height: 38px;
+  padding: 7px 14px;
+  border: 1px solid #29473d;
+  border-radius: 6px;
+  background: #29473d;
+  color: #fff;
+  cursor: pointer;
+}
+
+.product-pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 @media (max-width: 768px) {
   .product-search-filters { padding: 16px 1rem 0; }
   .product-search-status,
