@@ -34,41 +34,34 @@
 			<header class="chat-header">
 				<div class="assistant-profile">
 					<div class="assistant-avatar" aria-hidden="true"><i class="fa-solid fa-book-open"></i></div>
-					<div><p class="assistant-name">Hatchards guide</p><p class="assistant-status"><span class="status-dot"></span> Online agora</p></div>
+					<div><p class="assistant-name">Hatchards guide</p><p class="assistant-status"><span class="status-dot"></span><span id="api-status">Conectando à loja</span></p></div>
 				</div>
 				<button class="icon-button" type="button" aria-label="Mais opções"><i class="fa-solid fa-ellipsis"></i></button>
 			</header>
 
 			<section class="chat-content" aria-label="Conversa com o assistente">
-				<div class="date-divider"><span>Hoje, 10:42</span></div>
-				<div class="message message--bot message--welcome">
-					<div class="message-avatar" aria-hidden="true"><i class="fa-solid fa-book-open"></i></div>
-					<div class="message-body"><p>Olá, Ana! Sou seu guia da Hatchards. Posso ajudar a encontrar sua próxima leitura?</p><p>Você prefere descobrir algo pelo <strong>humor</strong>, pelo <strong>gênero</strong> ou por uma ocasião especial?</p></div>
+				<div class="date-divider"><span>Recomendações para você</span></div>
+				<div id="chat-messages" class="chat-messages" aria-live="polite">
+					<div class="message message--bot message--welcome">
+						<div class="message-avatar" aria-hidden="true"><i class="fa-solid fa-book-open"></i></div>
+						<div class="message-body"><p>Olá! Posso sugerir produtos usando suas compras e sua lista de desejos.</p><p>Por enquanto, entendo filtros simples de categoria e preço. A busca não usa IA generativa ainda.</p></div>
+					</div>
+					<div class="quick-replies" aria-label="Filtros rápidos">
+						<button type="button" data-prompt="Quero livros">Livros</button>
+						<button type="button" data-prompt="Quero brinquedos">Brinquedos</button>
+						<button type="button" data-prompt="Quero produtos até R$ 100">Até R$ 100</button>
+					</div>
 				</div>
-				<div class="quick-replies" aria-label="Sugestões de resposta">
-					<button type="button">Quero relaxar</button><button type="button">Um presente</button><button type="button">Algo surpreendente</button>
-				</div>
-				<div class="message message--user"><div class="message-body"><p>Quero uma leitura envolvente para este fim de semana.</p></div></div>
-				<div class="message message--bot">
-					<div class="message-avatar" aria-hidden="true"><i class="fa-solid fa-book-open"></i></div>
-					<div class="message-body"><p>Perfeito. Separei três histórias que prendem do começo ao fim:</p></div>
-				</div>
-				<div class="recommendations" aria-label="Livros recomendados">
-					<article class="book-card"><div class="book-cover book-cover--green"><span>The<br>Secret<br>Garden</span></div><div class="book-info"><span class="book-tag">Para mergulhar</span><h2>The Secret Garden</h2><p class="book-author">Frances Hodgson Burnett</p><div class="book-footer"><strong>R$ 49,90</strong><button type="button" aria-label="Adicionar The Secret Garden à sacola"><i class="fa-solid fa-plus"></i></button></div></div></article>
-					<article class="book-card"><div class="book-cover book-cover--coral"><span>Before<br>the<br>Coffee Gets Cold</span></div><div class="book-info"><span class="book-tag">Leitura leve</span><h2>Before the Coffee Gets Cold</h2><p class="book-author">Toshikazu Kawaguchi</p><div class="book-footer"><strong>R$ 58,90</strong><button type="button" aria-label="Adicionar Before the Coffee Gets Cold à sacola"><i class="fa-solid fa-plus"></i></button></div></div></article>
-					<article class="book-card"><div class="book-cover book-cover--gold"><span>Small<br>Things<br>Like These</span></div><div class="book-info"><span class="book-tag">Escolha do guia</span><h2>Small Things Like These</h2><p class="book-author">Claire Keegan</p><div class="book-footer"><strong>R$ 44,90</strong><button type="button" aria-label="Adicionar Small Things Like These à sacola"><i class="fa-solid fa-plus"></i></button></div></div></article>
-				</div>
-				<p class="typing"><span></span><span></span><span></span> O guia está pensando</p>
 			</section>
 
-			<form class="message-composer">
-				<button class="composer-action" type="button" aria-label="Anexar arquivo"><i class="fa-solid fa-paperclip"></i></button>
-				<label class="sr-only" for="message">Digite sua mensagem</label>
-				<input id="message" type="text" placeholder="Escreva uma mensagem..." autocomplete="off">
-				<button class="send-button" type="submit" aria-label="Enviar mensagem"><i class="fa-solid fa-arrow-up"></i></button>
+			<form id="message-composer" class="message-composer">
+				<label class="sr-only" for="message">Descreva o que você procura</label>
+				<input id="message" name="message" type="text" placeholder="Ex.: livros até R$ 100" autocomplete="off" maxlength="240" required>
+				<button class="send-button" type="submit" aria-label="Buscar recomendações"><i class="fa-solid fa-arrow-up"></i></button>
 			</form>
-			<p class="privacy-note"><i class="fa-solid fa-lock" aria-hidden="true"></i> Suas preferências ficam só entre você e seu guia.</p>
+			<p class="privacy-note"><i class="fa-solid fa-lock" aria-hidden="true"></i> Suas recomendações usam os dados da sua conta.</p>
 		</main>
 	</div>
+	<script src="chat/index.js" defer></script>
 </body>
 </html>

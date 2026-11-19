@@ -19,3 +19,9 @@ button, input { font: inherit; } button { cursor: pointer; }
 @keyframes appear { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 780px) { .chat-shell { display: block; }.chat-sidebar { min-height: auto; padding: 25px 24px; }.sidebar-intro { margin: 48px 0 30px; }.sidebar-intro h1 { max-width: 500px; font-size: 39px; }.sidebar-intro p { margin-bottom: 0; }.sidebar-note { display: none; }.chat-main { min-height: 680px; }.chat-header { padding: 18px 20px; }.chat-content { padding-top: 24px; }.recommendations { grid-template-columns: 1fr; margin-left: 0; }.book-card { flex-direction: row; }.book-cover { width: 110px; min-height: 120px; font-size: 16px; }.book-info { flex: 1; }.message--bot .message-body { max-width: calc(100% - 40px); } }
 @media (max-width: 420px) { .quick-replies { margin-left: 0; }.message-avatar { display: none; }.message-composer { width: calc(100% - 28px); }.book-cover { width: 94px; } }
+.status-error { color: #b14a37; }
+.chat-messages { min-height: 100%; }
+.recommendation-card .book-tag { display: block; min-height: 2.4em; color: var(--chat-muted); line-height: 1.4; text-transform: none; letter-spacing: 0; }
+.recommendation-card .book-cover { overflow-wrap: anywhere; text-transform: capitalize; }
+.recommendation-card .book-author { min-height: 30px; }
+.book-footer button:disabled { cursor: default; opacity: .72; }
