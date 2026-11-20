@@ -1,5 +1,6 @@
 const API_URL = "http://localhost:8080";
 const MAX_RECOMMENDATIONS = 8;
+let chatStarted = false;
 
 const chatMessages = document.getElementById("chat-messages");
 const messageForm = document.getElementById("message-composer");
@@ -41,43 +42,7 @@ function appendMessage(role, text) {
     message.append(body);
     chatMessages.append(message);
     message.scrollIntoView({ behavior: "smooth", block: "end" });
-}
-
-function normalizeText(value) {
-    return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-}
-
-function detectCategory(message) {
-    const text = normalizeText(message);
-    const categories = [
-        { category: "BOOKS", terms: ["livro", "livros", "book", "books", "romance", "leitura"] },
-        { category: "TOYS", terms: ["brinquedo", "brinquedos", "toy", "toys"] },
-        { category: "BAG", terms: ["bolsa", "bolsas", "bag"] },
-        { category: "FASHION", terms: ["moda", "roupa", "roupas", "fashion"] },
-        { category: "ELECTRONICS", terms: ["eletronico", "eletronicos", "eletronica", "eletronicas"] },
-        { category: "HOME_APPLIANCES", terms: ["eletrodomestico", "eletrodomesticos"] },
-        { category: "SPORTS", terms: ["esporte", "esportes", "sport"] },
-        { category: "BEAUTY", terms: ["beleza", "beauty"] },
-        { category: "PET_SUPPLIES", terms: ["pet", "pets", "animais"] },
-        { category: "GROCERY", terms: ["mercado", "alimentos", "grocery"] },
-        { category: "FURNITURE", terms: ["moveis", "furniture"] },
-        { category: "AUTOMOTIVE", terms: ["automotivo", "automotivos", "carro", "carros"] },
-        { category: "HEALTH", terms: ["saude", "health"] },
-        { category: "OFFICE_SUPPLIES", terms: ["escritorio", "papelaria"] },
-        { category: "MUSIC", terms: ["musica", "music"] },
-        { category: "JEWELRY", terms: ["joias", "joia", "jewelry"] }
-    ];
-
-    return categories.find(({ terms }) => terms.some(term => text.includes(term)))?.category;
-}
-
-function detectMaximumPrice(message) {
-    const text = normalizeText(message);
-    const match = text.match(/(?:ate|no maximo|menos de|abaixo de|maximo)\s*(?:r\$\s*)?(\d+(?:[.,]\d{1,2})?)/);
-    if (!match) return undefined;
-
-    const price = Number(match[1].replace(",", "."));
-    return Number.isFinite(price) ? price : undefined;
+    return message;
 }
 
 function formatPrice(price, typeCoin) {
@@ -129,35 +94,27 @@ function createRecommendationCard(product) {
     return card;
 }
 
-function appendRecommendations(products) {
-    if (!Array.isArray(products) || products.length === 0) {
-        appendMessage("bot", "Não encontrei produtos que atendam a esses filtros com estoque disponível. Tente outra categoria ou faixa de preço.");
-        return;
-    }
+function appendRecommendations(products, idle = false) {
+    if (!Array.isArray(products) || products.length === 0) return;
 
-    appendMessage("bot", `Encontrei ${products.length} opção${products.length === 1 ? "" : "ões"} com base no seu histórico, na sua lista de desejos e nos produtos disponíveis:`);
     const recommendations = document.createElement("div");
-    recommendations.className = "recommendations";
+    recommendations.className = idle ? "recommendations idle-recommendations" : "recommendations";
     recommendations.setAttribute("aria-label", "Produtos recomendados");
-    products.forEach(product => recommendations.append(createRecommendationCard(product)));
+    products.slice(0, MAX_RECOMMENDATIONS).forEach(product => recommendations.append(createRecommendationCard(product)));
     chatMessages.append(recommendations);
     recommendations.scrollIntoView({ behavior: "smooth", block: "end" });
 }
 
-async function fetchRecommendations(prompt = "") {
+function clearIdleRecommendations() {
+    chatMessages.querySelectorAll(".idle-recommendations, .idle-recommendation-message")
+        .forEach(element => element.remove());
+}
+
+async function fetchInitialRecommendations() {
     const token = getToken();
-    if (!token) {
-        window.location.href = "/login.html";
-        return;
-    }
+    if (!token) return;
 
     const params = new URLSearchParams({ limit: String(MAX_RECOMMENDATIONS), typeCoin: "REAL" });
-    const category = detectCategory(prompt);
-    const maximumPrice = detectMaximumPrice(prompt);
-    if (category) params.set("category", category);
-    if (maximumPrice !== undefined) params.set("maximumPrice", String(maximumPrice));
-
-    setApiStatus("Buscando recomendações...");
     try {
         const response = await fetch(`${API_URL}/customer/recommendations?${params}`, {
             headers: { Accept: "application/json", Authorization: `Bearer ${token}` }
@@ -168,12 +125,15 @@ async function fetchRecommendations(prompt = "") {
         }
         if (!response.ok) throw new Error(`A API respondeu com HTTP ${response.status}.`);
 
-        appendRecommendations(await response.json());
-        setApiStatus("Recomendações atualizadas");
+        const products = await response.json();
+        if (chatStarted || !Array.isArray(products) || products.length === 0) return;
+        const intro = appendMessage("bot", "Enquanto você decide o que procura, separei algumas sugestões para você:");
+        intro.classList.add("idle-recommendation-message");
+        appendRecommendations(products, true);
+        setApiStatus("Sugestões pessoais carregadas");
     } catch (error) {
-        console.error("Falha ao buscar recomendações:", error);
-        appendMessage("bot", "Não consegui carregar recomendações agora. Confira se a loja está disponível e tente novamente.");
-        setApiStatus("Falha ao conectar", true);
+        console.error("Falha ao carregar sugestões iniciais:", error);
+        if (!chatStarted) setApiStatus("Assistente pronto");
     }
 }
 
@@ -214,9 +174,46 @@ async function addToCart(product, button) {
 async function sendPrompt(prompt) {
     const text = prompt.trim();
     if (!text) return;
+
+    const token = getToken();
+    if (!token) {
+        window.location.href = "/login.html";
+        return;
+    }
+
+    chatStarted = true;
+    clearIdleRecommendations();
     appendMessage("user", text);
-    appendMessage("bot", "Vou consultar as recomendações disponíveis para você.");
-    await fetchRecommendations(text);
+    const loadingMessage = appendMessage("bot", "Analisando sua mensagem...");
+    setApiStatus("Consultando assistente...");
+
+    try {
+        const response = await fetch(`${API_URL}/customer/recommendations/chat`, {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ message: text })
+        });
+        if (response.status === 401) {
+            redirectToLogin();
+            return;
+        }
+        if (!response.ok) throw new Error(`A API respondeu com HTTP ${response.status}.`);
+
+        const result = await response.json();
+        loadingMessage.remove();
+        appendMessage("bot", result.answer || "Não consegui responder agora.");
+        appendRecommendations(result.recommendations);
+        setApiStatus("Resposta pronta");
+    } catch (error) {
+        console.error("Falha na recomendação conversacional:", error);
+        loadingMessage.remove();
+        appendMessage("bot", "Não consegui consultar o assistente agora. Confira se a API e o serviço de IA estão disponíveis e tente novamente.");
+        setApiStatus("Falha ao conectar", true);
+    }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -237,5 +234,5 @@ document.addEventListener("DOMContentLoaded", () => {
         button.addEventListener("click", () => sendPrompt(button.dataset.prompt));
     });
 
-    fetchRecommendations();
+    fetchInitialRecommendations();
 });

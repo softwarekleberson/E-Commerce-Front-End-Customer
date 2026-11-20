@@ -21,7 +21,7 @@
 			<div class="sidebar-intro">
 				<span class="eyebrow">Seu concierge literário</span>
 				<h1>Encontre uma história que combina com você.</h1>
-				<p>Conte o que você está procurando. Eu seleciono livros com carinho e boas razões.</p>
+				<p>Conte o que você procura. A IA entende sua mensagem e recomenda produtos do catálogo.</p>
 			</div>
 			<nav class="sidebar-links" aria-label="Links úteis">
 				<a href="index.html"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Voltar à loja</a>
@@ -40,11 +40,11 @@
 			</header>
 
 			<section class="chat-content" aria-label="Conversa com o assistente">
-				<div class="date-divider"><span>Recomendações para você</span></div>
+				<div class="date-divider"><span>Sugestões para você</span></div>
 				<div id="chat-messages" class="chat-messages" aria-live="polite">
 					<div class="message message--bot message--welcome">
 						<div class="message-avatar" aria-hidden="true"><i class="fa-solid fa-book-open"></i></div>
-						<div class="message-body"><p>Olá! Posso sugerir produtos usando suas compras e sua lista de desejos.</p><p>Por enquanto, entendo filtros simples de categoria e preço. A busca não usa IA generativa ainda.</p></div>
+						<div class="message-body"><p>Olá! Aqui estão algumas sugestões baseadas na sua conta.</p><p>Quando quiser, descreva o produto que procura e a IA continuará a conversa.</p></div>
 					</div>
 					<div class="quick-replies" aria-label="Filtros rápidos">
 						<button type="button" data-prompt="Quero livros">Livros</button>
@@ -56,10 +56,10 @@
 
 			<form id="message-composer" class="message-composer">
 				<label class="sr-only" for="message">Descreva o que você procura</label>
-				<input id="message" name="message" type="text" placeholder="Ex.: livros até R$ 100" autocomplete="off" maxlength="240" required>
-				<button class="send-button" type="submit" aria-label="Buscar recomendações"><i class="fa-solid fa-arrow-up"></i></button>
+				<input id="message" name="message" type="text" placeholder="Ex.: quero um livro de aventura até R$ 100" autocomplete="off" maxlength="240" required>
+				<button class="send-button" type="submit" aria-label="Enviar mensagem"><i class="fa-solid fa-arrow-up"></i></button>
 			</form>
-			<p class="privacy-note"><i class="fa-solid fa-lock" aria-hidden="true"></i> Suas recomendações usam os dados da sua conta.</p>
+			<p class="privacy-note"><i class="fa-solid fa-lock" aria-hidden="true"></i> Sugestões iniciais usam sua conta; na conversa, a IA consulta o catálogo.</p>
 		</main>
 	</div>
 	<script src="chat/index.js" defer></script>
