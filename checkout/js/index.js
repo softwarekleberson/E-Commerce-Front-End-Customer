@@ -202,7 +202,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!amount1Select) return;
         amount1Select.innerHTML = '<option value="">Selecione um valor</option>';
 
-        const halfValue = Number((totalValue / 2).toFixed(2));
+        const totalCents = Math.round(totalValue * 100);
+        const halfValue = Math.floor(totalCents / 2) / 100;
         if (halfValue <= 0) return;
 
         let step = 1;

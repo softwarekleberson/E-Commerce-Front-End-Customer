@@ -65,7 +65,46 @@ async function adicionarProdutoDoIndex(page, cardIndex) {
   return nomeProduto.trim();
 }
 
+async function esvaziarCarrinho(page) {
+  const token = await page.evaluate(() => localStorage.getItem('token'));
+  expect(token, 'Token de autenticação ausente ao limpar o carrinho').toBeTruthy();
+  const headers = { Authorization: `Bearer ${token}` };
+
+  const cartResponse = await page.request.get('http://localhost:8080/customer/cart', { headers });
+  expect(
+    cartResponse.ok(),
+    `Falha ao consultar o carrinho para limpeza: HTTP ${cartResponse.status()}`
+  ).toBeTruthy();
+  const cart = await cartResponse.json();
+
+  for (const item of cart.cartItens ?? []) {
+    const cartItemId = item.cartItemId;
+    const reservationId = item.reservationId ?? item.reservation_id ?? item.reservationid;
+    expect(cartItemId, 'Item do carrinho sem cartItemId').toBeTruthy();
+    expect(reservationId, `Item ${cartItemId} sem reservationId`).toBeTruthy();
+
+    const deleteResponse = await page.request.delete(
+      `http://localhost:8080/customer/cart/item/${encodeURIComponent(cartItemId)}`,
+      {
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        data: JSON.stringify({ reservationId }),
+      }
+    );
+    const errorBody = deleteResponse.ok() ? '' : await deleteResponse.text();
+    expect(
+      deleteResponse.ok(),
+      `Falha ao limpar item ${cartItemId}: HTTP ${deleteResponse.status()} - ${errorBody}`
+    ).toBeTruthy();
+  }
+
+  const finalResponse = await page.request.get('http://localhost:8080/customer/cart', { headers });
+  expect(finalResponse.ok(), 'Falha ao confirmar a limpeza do carrinho').toBeTruthy();
+  const finalCart = await finalResponse.json();
+  expect(finalCart.cartItens ?? [], 'O carrinho deve ficar vazio ao final de cada teste').toHaveLength(0);
+}
+
 test.describe('Fluxo do Carrinho de Compras (E2E)', () => {
+  test.describe.configure({ mode: 'serial' });
 
   test.beforeEach(async ({ page }) => {
     // 1. Acessa a página de login
@@ -86,6 +125,11 @@ test.describe('Fluxo do Carrinho de Compras (E2E)', () => {
     // 3. Valida se o Token JWT foi armazenado no LocalStorage
     const token = await page.evaluate(() => localStorage.getItem('token'));
     expect(token).toBeTruthy();
+  });
+
+  test.afterEach(async ({ page }) => {
+    const token = await page.evaluate(() => localStorage.getItem('token'));
+    if (token) await esvaziarCarrinho(page);
   });
 
   test('Deve carregar o carrinho do usuário autenticado (Read)', async ({ page }) => {

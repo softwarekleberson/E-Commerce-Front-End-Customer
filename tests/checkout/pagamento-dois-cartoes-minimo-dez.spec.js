@@ -35,6 +35,18 @@ async function addProductAndOpenSplitPayment(page, token) {
 
   const customer = await customerResponse.json();
   const cards = customer.cards ?? [];
+  const delivery = customer.deliveres?.find((item) => item.main) ?? customer.deliveres?.[0];
+  expect(
+    delivery,
+    'Cadastre um endereço de entrega na conta antes de executar o checkout com dois cartões.'
+  ).toBeTruthy();
+  for (const field of ['street', 'number', 'neighborhood', 'city', 'state']) {
+    expect(
+      String(delivery[field] ?? '').trim(),
+      `O endereço principal precisa ter o campo ${field} preenchido.`
+    ).not.toBe('');
+  }
+
   expect(
     cards.some((card) => card.cardId === FIRST_CARD_ID),
     `Cartão principal ${FIRST_CARD_ID} não encontrado na conta`
@@ -64,6 +76,9 @@ async function addProductAndOpenSplitPayment(page, token) {
 
   await page.goto('/checkout.html');
   await expect(page.locator('#summaryTotal')).not.toHaveText('R$ 0,00');
+  for (const field of ['street', 'number', 'neighborhood', 'city', 'state']) {
+    await expect(page.locator(`#${field}`)).not.toHaveValue('');
+  }
   await page.getByRole('radio', { name: 'Two Cards Payment', exact: true }).check();
 
   await expect(page.locator(`#registeredCards option[value="${FIRST_CARD_ID}"]`)).toHaveCount(1);
@@ -95,11 +110,12 @@ test.describe('checkout com divisão em dois cartões', () => {
     await expect(amountSelect.locator('option').nth(1)).toBeAttached();
     const firstCardAmountValue = await amountSelect.locator('option').last().getAttribute('value');
     const firstCardAmount = Number(firstCardAmountValue);
+    const total = await page.evaluate(() => window.checkoutCartTotal);
     expect(firstCardAmount).toBeGreaterThan(0);
+    expect(firstCardAmount).toBeLessThanOrEqual(total / 2);
     await amountSelect.selectOption(firstCardAmountValue);
     await expect(page.locator('#payButton')).toBeEnabled();
 
-    const total = await page.evaluate(() => window.checkoutCartTotal);
     const [paymentResponse] = await Promise.all([
       page.waitForResponse((res) =>
         res.url() === `${API_URL}/payment/checkout` && res.request().method() === 'POST'

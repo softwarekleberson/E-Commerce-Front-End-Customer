@@ -34,20 +34,24 @@ async function getProducts(page) {
 async function emptyCustomerCart(page, headers, cart) {
   for (const item of cart.cartItens ?? []) {
     const cartItemId = item.cartItemId;
+    const reservationId = item.reservationId ?? item.reservation_id ?? item.reservationid;
     expect(cartItemId, 'Item do carrinho sem cartItemId').toBeTruthy();
+    expect(
+      reservationId,
+      `Item ${cartItemId} do carrinho não possui reservationId`
+    ).toBeTruthy();
 
     const response = await page.request.delete(
       `${API_URL}/customer/cart/item/${encodeURIComponent(cartItemId)}`,
       {
-        headers,
-        data: {
-          reservationId: item.reservationId ?? item.reservation_id,
-        },
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        data: JSON.stringify({ reservationId }),
       }
     );
+    const errorBody = response.ok() ? '' : await response.text();
     expect(
       response.ok(),
-      `Falha ao remover item ${cartItemId}: HTTP ${response.status()}`
+      `Falha ao remover item ${cartItemId}: HTTP ${response.status()} - ${errorBody}`
     ).toBeTruthy();
   }
 
