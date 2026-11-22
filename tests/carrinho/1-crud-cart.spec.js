@@ -5,6 +5,66 @@ const TEST_USER = {
   password: process.env.LOGIN_PASSWORD,
 };
 
+async function adicionarPrimeiroProdutoDoIndex(page) {
+  await page.goto('/index.html');
+
+  const primeiroProduto = page.locator('#books-container .card').first();
+  await expect(primeiroProduto).toBeVisible();
+
+  const linkDetalhes = primeiroProduto.getByRole('link', { name: 'Details', exact: true });
+  await Promise.all([
+    page.waitForURL(/\/book-details\.html\?/),
+    linkDetalhes.click(),
+  ]);
+
+  page.on('dialog', (dialog) => dialog.accept());
+
+  await expect(page.getByRole('button', { name: 'Add To Cart', exact: true })).toBeVisible();
+  const [addResponse] = await Promise.all([
+    page.waitForResponse((response) =>
+      response.url() === 'http://localhost:8080/customer/cart' &&
+      response.request().method() === 'POST'
+    ),
+    page.getByRole('button', { name: 'Add To Cart', exact: true }).click(),
+  ]);
+
+  expect(
+    addResponse.ok(),
+    `POST respondeu HTTP ${addResponse.status()}`
+  ).toBeTruthy();
+  await page.waitForURL(/\/cart\.html$/);
+}
+
+async function adicionarProdutoDoIndex(page, cardIndex) {
+  await page.goto('/index.html');
+
+  const produto = page.locator('#books-container .card').nth(cardIndex);
+  await expect(produto).toBeVisible();
+
+  const nomeProduto = await produto.locator('.card__title').textContent();
+  await Promise.all([
+    page.waitForURL(/\/book-details\.html\?/),
+    produto.getByRole('link', { name: 'Details', exact: true }).click(),
+  ]);
+
+  await expect(page.getByRole('button', { name: 'Add To Cart', exact: true })).toBeVisible();
+  const [addResponse] = await Promise.all([
+    page.waitForResponse((response) =>
+      response.url() === 'http://localhost:8080/customer/cart' &&
+      response.request().method() === 'POST'
+    ),
+    page.getByRole('button', { name: 'Add To Cart', exact: true }).click(),
+  ]);
+
+  expect(
+    addResponse.ok(),
+    `POST respondeu HTTP ${addResponse.status()}`
+  ).toBeTruthy();
+  await page.waitForURL(/\/cart\.html$/);
+
+  return nomeProduto.trim();
+}
+
 test.describe('Fluxo do Carrinho de Compras (E2E)', () => {
 
   test.beforeEach(async ({ page }) => {
@@ -29,6 +89,8 @@ test.describe('Fluxo do Carrinho de Compras (E2E)', () => {
   });
 
   test('Deve carregar o carrinho do usuário autenticado (Read)', async ({ page }) => {
+    await adicionarPrimeiroProdutoDoIndex(page);
+
     const cartResponsePromise = page.waitForResponse(
       (res) => res.url().includes('/customer/cart') && res.request().method() === 'GET'
     );
@@ -37,7 +99,7 @@ test.describe('Fluxo do Carrinho de Compras (E2E)', () => {
     const cartResponse = await cartResponsePromise;
     expect(
       cartResponse.status(),
-      `GET /customer/cart respondeu HTTP ${cartResponse.status()}: ${await cartResponse.text()}`
+      `GET /customer/cart respondeu HTTP ${cartResponse.status()}`
     ).toBe(200);
 
     const tabela = page.locator('table');
@@ -64,7 +126,7 @@ test.describe('Fluxo do Carrinho de Compras (E2E)', () => {
     const cartResponse = await cartResponsePromise;
     expect(
       cartResponse.status(),
-      `GET /customer/cart respondeu HTTP ${cartResponse.status()}: ${await cartResponse.text()}`
+      `GET /customer/cart respondeu HTTP ${cartResponse.status()}`
     ).toBe(200);
 
     let primeiraLinha = page.locator('table tbody tr[data-cart-item-id]').first();
@@ -109,46 +171,34 @@ test.describe('Fluxo do Carrinho de Compras (E2E)', () => {
     expect(alertMessage).toContain('Insufficient stock');
   });
 
-  test('adiciona um produto, atualiza a quantidade para 3 e exclui o item', async ({ page }) => {
+  test('adiciona dois produtos, atualiza um para 3 e exclui apenas um item', async ({ page }) => {
     test.skip(
       process.env.RUN_REAL_CART_UPDATE_DELETE !== 'true',
-      'Defina RUN_REAL_CART_UPDATE_DELETE=true para adicionar, atualizar e remover um item real do carrinho.'
-    );
-
-    const productsResponse = await page.request.get('http://localhost:8080/public/product');
-    expect(productsResponse.ok()).toBeTruthy();
-    const productsPayload = await productsResponse.json();
-    const products = productsPayload.content ?? productsPayload;
-    const product = products.find((item) => item.category === 'BOOKS' && item.id);
-    test.skip(
-      !product,
-      'A API não retornou produto da categoria BOOKS; cadastre um produto para executar o fluxo CRUD.'
+      'Defina RUN_REAL_CART_UPDATE_DELETE=true para adicionar, atualizar e remover itens reais do carrinho.'
     );
 
     page.on('dialog', (dialog) => dialog.accept());
-    await page.goto(`/book-details.html?id=${encodeURIComponent(product.id)}`);
 
-    const [addResponse] = await Promise.all([
-      page.waitForResponse((response) =>
-        response.url() === 'http://localhost:8080/customer/cart' &&
-        response.request().method() === 'POST'
-      ),
-      page.getByRole('button', { name: 'Add To Cart', exact: true }).click(),
-    ]);
-    expect(addResponse.ok()).toBeTruthy();
-    await page.waitForURL(/\/cart\.html$/);
+    const primeiroNome = await adicionarProdutoDoIndex(page, 0);
+    const segundoNome = await adicionarProdutoDoIndex(page, 1);
+    expect(segundoNome, 'O index precisa mostrar pelo menos dois livros distintos').not.toBe(primeiroNome);
 
-    const productRow = page.locator('table tbody tr[data-cart-item-id]')
-      .filter({ hasText: product.name })
+    const primeiroRow = page.locator('table tbody tr[data-cart-item-id]')
+      .filter({ hasText: primeiroNome })
       .last();
-    await expect(productRow).toBeVisible();
+    const segundoRow = page.locator('table tbody tr[data-cart-item-id]')
+      .filter({ hasText: segundoNome })
+      .last();
 
-    const cartItemId = await productRow.getAttribute('data-cart-item-id');
-    const quantityInput = productRow.locator('input[type="number"]');
+    await expect(primeiroRow).toBeVisible();
+    await expect(segundoRow).toBeVisible();
+
+    const cartItemId = await primeiroRow.getAttribute('data-cart-item-id');
+    const quantityInput = primeiroRow.locator('input[type="number"]');
     await page.waitForFunction((row) => {
       const reservationId = row?.getAttribute('data-reservation-id');
       return reservationId && reservationId !== 'undefined' && reservationId.trim() !== '';
-    }, await productRow.elementHandle());
+    }, await primeiroRow.elementHandle());
 
     const [updateResponse] = await Promise.all([
       page.waitForResponse((response) =>
@@ -167,14 +217,14 @@ test.describe('Fluxo do Carrinho de Compras (E2E)', () => {
     await page.waitForFunction((row) => {
       const reservationId = row?.getAttribute('data-reservation-id');
       return reservationId && reservationId !== 'undefined' && reservationId.trim() !== '';
-    }, await productRow.elementHandle());
+    }, await primeiroRow.elementHandle());
 
     const [deleteResponse] = await Promise.all([
       page.waitForResponse((response) =>
         response.url() === `http://localhost:8080/customer/cart/item/${cartItemId}` &&
         response.request().method() === 'DELETE'
       ),
-      productRow.getByRole('button').click(),
+      primeiroRow.getByRole('button').click(),
     ]);
 
     const deleteError = deleteResponse.ok() ? '' : await deleteResponse.text();
@@ -183,6 +233,7 @@ test.describe('Fluxo do Carrinho de Compras (E2E)', () => {
       `DELETE respondeu HTTP ${deleteResponse.status()}: ${deleteError}`
     ).toBeTruthy();
     await expect(page.locator(`tr[data-cart-item-id="${cartItemId}"]`)).toHaveCount(0);
+    await expect(segundoRow).toBeVisible();
 
     const token = await page.evaluate(() => localStorage.getItem('token'));
     await expect.poll(async () => {
@@ -191,10 +242,15 @@ test.describe('Fluxo do Carrinho de Compras (E2E)', () => {
       });
       expect(response.ok()).toBeTruthy();
       const cart = await response.json();
-      return cart.cartItens?.some(
+      const items = cart.cartItens ?? [];
+      const removed = items.some(
         (item) => String(item.cartItemId) === String(cartItemId)
-      ) ?? false;
-    }).toBe(false);
+      );
+      const secondStillPresent = items.some(
+        (item) => item.productName === segundoNome
+      );
+      return { removed, secondStillPresent };
+    }).toEqual({ removed: false, secondStillPresent: true });
   });
 
 });
