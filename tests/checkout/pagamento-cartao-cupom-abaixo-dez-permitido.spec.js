@@ -6,7 +6,12 @@ const VOUCHER_ID = process.env.CHECKOUT_CARD_COUPON_VOUCHER_ID_PAGAMENTO_MENOR_D
 
 async function getCustomerCart(page, headers) {
   const response = await page.request.get(`${API_URL}/customer/cart`, { headers });
-  expect(response.ok(), `Falha ao consultar o carrinho: HTTP ${response.status()}`).toBeTruthy();
+  if (!response.ok()) {
+    const errorBody = await response.text();
+    throw new Error(
+      `Falha ao consultar o carrinho: HTTP ${response.status()} - ${errorBody}`
+    );
+  }
   return response.json();
 }
 
@@ -26,28 +31,31 @@ async function getProducts(page) {
   return products;
 }
 
-async function payWithCard(page, cardId) {
-  await page.goto('/checkout.html');
-  await expect.poll(() => page.evaluate(() => window.checkoutCartTotal)).toBeGreaterThan(0);
-  await page.getByRole('radio', { name: 'Card Payment', exact: true }).check();
-  const cardSelect = page.locator('#registeredCards');
-  await expect(cardSelect.locator(`option[value="${cardId}"]`)).toHaveCount(1);
-  await cardSelect.selectOption(cardId);
-  const payButton = page.locator('#payButton');
-  await expect(payButton).toBeEnabled();
+async function emptyCustomerCart(page, headers, cart) {
+  for (const item of cart.cartItens ?? []) {
+    const cartItemId = item.cartItemId;
+    expect(cartItemId, 'Item do carrinho sem cartItemId').toBeTruthy();
 
-  const [paymentResponse] = await Promise.all([
-    page.waitForResponse((response) =>
-      response.url() === `${API_URL}/payment/checkout` &&
-      response.request().method() === 'POST'
-    ),
-    payButton.click(),
-  ]);
-  expect(paymentResponse.ok(), `Pagamento prévio respondeu HTTP ${paymentResponse.status()}`).toBeTruthy();
-  expect(paymentResponse.request().postDataJSON()).toMatchObject({
-    typePayment: 'CARD',
-    numberCardOne: cardId,
-  });
+    const response = await page.request.delete(
+      `${API_URL}/customer/cart/item/${encodeURIComponent(cartItemId)}`,
+      {
+        headers,
+        data: {
+          reservationId: item.reservationId ?? item.reservation_id,
+        },
+      }
+    );
+    expect(
+      response.ok(),
+      `Falha ao remover item ${cartItemId}: HTTP ${response.status()}`
+    ).toBeTruthy();
+  }
+
+  const emptiedCart = await getCustomerCart(page, headers);
+  expect(
+    emptiedCart.cartItens ?? [],
+    'O carrinho deve estar vazio antes de adicionar o produto do teste'
+  ).toHaveLength(0);
 }
 
 test('cliente aplica cupom e paga com cartão um valor menor que R$ 10,00', async ({ page }) => {
@@ -92,16 +100,7 @@ test('cliente aplica cupom e paga com cartão um valor menor que R$ 10,00', asyn
   expect(voucher, `Cupom ${VOUCHER_ID} não encontrado para o cliente`).toBeTruthy();
 
   page.on('dialog', (dialog) => dialog.accept());
-  // Se já havia produtos no carrinho, finaliza essa compra antes de iniciar o cenário.
-  if ((initialCart.cartItens ?? []).length > 0) {
-    await payWithCard(page, CARD_ID);
-  }
-
-  const cartAfterPriorPayment = await getCustomerCart(page, headers);
-  expect(
-    cartAfterPriorPayment.cartItens ?? [],
-    'O carrinho deveria estar vazio após pagar os itens que já estavam nele'
-  ).toHaveLength(0);
+  await emptyCustomerCart(page, headers, initialCart);
 
   const product = products
     .filter((item) => item.id)
@@ -118,6 +117,9 @@ test('cliente aplica cupom e paga com cartão um valor menor que R$ 10,00', asyn
   ]);
   expect(addResponse.ok()).toBeTruthy();
   await page.waitForURL(/\/cart\.html$/);
+  const cartAfterAdd = await getCustomerCart(page, headers);
+  expect(cartAfterAdd.cartItens ?? []).toHaveLength(1);
+  expect(cartAfterAdd.cartItens[0].productName).toBe(product.name);
   await expect(
     page.locator('table tbody tr[data-cart-item-id]').filter({ hasText: product.name }).last()
   ).toBeVisible();
@@ -125,9 +127,14 @@ test('cliente aplica cupom e paga com cartão um valor menor que R$ 10,00', asyn
   await page.goto('/checkout.html');
   await expect.poll(() => page.evaluate(() => window.checkoutCartTotal)).toBeGreaterThan(0);
   const cartTotal = await page.evaluate(() => window.checkoutCartTotal);
-  const amountOnCard = cartTotal - Number(voucher.discount);
+  const voucherDiscount = Number(voucher.discount);
+  const amountOnCard = Number((cartTotal - voucherDiscount).toFixed(2));
   expect(amountOnCard, 'O valor restante no cartão deve ser positivo').toBeGreaterThan(0);
-  expect(amountOnCard, 'O valor restante no cartão deve ser menor que R$ 10,00').toBeLessThan(10);
+  const minimumDiscountForUnderTen = Number((cartTotal - 9.99).toFixed(2));
+  expect(
+    amountOnCard,
+    `Total R$ ${cartTotal.toFixed(2)} menos cupom R$ ${voucherDiscount.toFixed(2)} resulta em R$ ${amountOnCard.toFixed(2)}. Para ficar abaixo de R$ 10,00, o desconto precisa ser de pelo menos R$ ${minimumDiscountForUnderTen.toFixed(2)}.`
+  ).toBeLessThan(10);
 
   await page.getByRole('radio', { name: 'Card + Coupon Payment', exact: true }).check();
   const cardSelect = page.locator('#registeredCards');
