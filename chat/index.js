@@ -45,6 +45,90 @@ function appendMessage(role, text) {
     return message;
 }
 
+function appendFeedbackControls(message, responseId, liked = null) {
+    if (typeof responseId !== "string" || !responseId) return;
+
+    const body = message.querySelector(".message-body");
+    const controls = document.createElement("div");
+    controls.className = "message-feedback";
+
+    const prompt = document.createElement("span");
+    prompt.className = "feedback-prompt";
+    prompt.textContent = "Essa resposta foi útil?";
+    controls.append(prompt);
+
+    for (const [value, label, icon] of [
+        [true, "Gostei da resposta", "fa-thumbs-up"],
+        [false, "Não gostei da resposta", "fa-thumbs-down"]
+    ]) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "feedback-button";
+        button.dataset.liked = String(value);
+        button.setAttribute("aria-label", label);
+        button.setAttribute("aria-pressed", String(liked === value));
+        button.innerHTML = `<i class="fa-solid ${icon}" aria-hidden="true"></i> ${value ? "Gostei" : "Não gostei"}`;
+        button.addEventListener("click", () => submitFeedback(responseId, value, controls));
+        controls.append(button);
+    }
+
+    const status = document.createElement("span");
+    status.className = "feedback-status";
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    controls.append(status);
+    body.append(controls);
+}
+
+async function submitFeedback(responseId, liked, controls) {
+    const token = getToken();
+    if (!token) {
+        window.location.href = "/login.html";
+        return;
+    }
+
+    const buttons = controls.querySelectorAll(".feedback-button");
+    const status = controls.querySelector(".feedback-status");
+    buttons.forEach(button => {
+        button.disabled = true;
+    });
+    status.textContent = "Salvando avaliação...";
+
+    try {
+        const response = await fetch(
+            `${API_URL}/customer/recommendations/chat/${encodeURIComponent(responseId)}/feedback`,
+            {
+                method: "POST",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ liked })
+            }
+        );
+        if (response.status === 401) {
+            redirectToLogin();
+            return;
+        }
+        if (!response.ok) throw new Error(`A API respondeu com HTTP ${response.status}.`);
+
+        buttons.forEach(button => {
+            const selected = button.dataset.liked === String(liked);
+            button.setAttribute("aria-pressed", String(selected));
+            button.classList.toggle("is-selected", selected);
+        });
+        status.textContent = "Obrigado pelo feedback.";
+    } catch (error) {
+        console.error("Falha ao registrar feedback da recomendação:", error);
+        status.textContent = "Não foi possível salvar sua avaliação. Tente novamente.";
+    } finally {
+        buttons.forEach(button => {
+            button.disabled = false;
+        });
+    }
+}
+
 function formatPrice(price, typeCoin) {
     const currencies = { REAL: "BRL", DOLAR: "USD", EURO: "EUR", LIBRA: "GBP" };
     const currency = currencies[typeCoin] || "BRL";
@@ -205,7 +289,8 @@ async function sendPrompt(prompt) {
 
         const result = await response.json();
         loadingMessage.remove();
-        appendMessage("bot", result.answer || "Não consegui responder agora.");
+        const answerMessage = appendMessage("bot", result.answer || "Não consegui responder agora.");
+        appendFeedbackControls(answerMessage, result.responseId, result.liked);
         appendRecommendations(result.recommendations);
         setApiStatus("Resposta pronta");
     } catch (error) {
